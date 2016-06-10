@@ -1,0 +1,38 @@
+Command Mode Specification
+
+- find
+- - case insensitive
+- - case sensitive
+- - regular expressions
+- - - search & replace
+- - - - once
+- - - - all
+- - - grep
+- - - - print to new window
+- - - - highlight all words in current window
+- - - delete lines
+
+- goto
+- - line and column
+
+- save
+
+- save as
+
+- close window
+
+- new
+
+- open
+
+- undo
+- - multiple
+
+- redo
+- - multiple
+
+- revert to saved
+
+- copy line
+
+- copy code block

@@ -1,0 +1,87 @@
+DROP TABLE namespaces;
+DROP TABLE classes;
+DROP TABLE procedures;
+DROP TABLE files;
+DROP TABLE procedure_calls;
+DROP TABLE code_blocks;
+DROP TABLE declarations;
+DROP TABLE definitions;
+DROP TABLE block_owners;
+DROP TABLE objects;
+DROP TABLE object_uses;
+
+
+
+CREATE TABLE namespaces
+(pk INTEGER DEFAULT 0 NOT NULL,
+declaration_fk INTEGER NOT NULL,
+name VARCHAR(50) NOT NULL,
+PRIMARY KEY (pk),
+UNIQUE (name));
+
+CREATE TABLE declarations
+(pk INTEGER NOT NULL,
+block_fk INTEGER NOT NULL,
+line INTEGER NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE definitions
+(pk INTEGER NOT NULL,
+block_fk INTEGER NOT NULL,
+line INTEGER NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE classes
+(pk INTEGER NOT NULL,
+declaration_fk INTEGER NOT NULL,
+name VARCHAR(50) DEFAULT 'unset' NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE procedures
+(pk INTEGER DEFAULT 0 NOT NULL,
+declaration_fk INTEGER NOT NULL,
+definition_fk INTEGER NOT NULL,
+name VARCHAR(50) NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE code_blocks
+(pk INTEGER  NOT NULL,
+file_fk INTEGER NOT NULL,
+owner_fk INTEGER NOT NULL,
+start_line INTEGER,
+end_line INTEGER,
+PRIMARY KEY (pk));
+
+CREATE TABLE block_owners
+(pk INTEGER NOT NULL,
+owner_key INTEGER NOT NULL,
+owner_type INTEGER NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE files
+(pk INTEGER NOT NULL,
+name VARCHAR(80) DEFAULT 'unset' NOT NULL,
+path VARCHAR(256) DEFAULT 'unset' NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE procedure_calls
+(pk INTEGER NOT NULL,
+procedure_fk INTEGER NOT NULL,
+block_fk INTEGER NOT NULL,
+line INTEGER DEFAULT 0 NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE objects
+(pk INTEGER NOT NULL,
+class_fk INTEGER NOT NULL,
+block_fk INTEGER NOT NULL,
+line INTEGER NOT NULL,
+name VARCHAR(50) DEFAULT 'unset' NOT NULL,
+PRIMARY KEY (pk));
+
+CREATE TABLE object_uses
+(pk INTEGER NOT NULL,
+object_fk INTEGER NOT NULL,
+block_fk INTEGER NOT NULL,
+line INTEGER NOT NULL,
+PRIMARY KEY (pk));

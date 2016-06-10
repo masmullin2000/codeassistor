@@ -1,0 +1,738 @@
+From 70a7f251e6a90ea56264d81bcdae5b86fb544bf0 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Wed, 26 Jan 2011 21:32:02 -0500
+Subject: [PATCH 1/8] added a makefile. fixed some casts that older generation compilers dont pick up
+
+---
+ chromium-tabs.mk |  164 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 164 insertions(+), 0 deletions(-)
+ create mode 100644 chromium-tabs.mk
+
+diff --git a/chromium-tabs.mk b/chromium-tabs.mk
+new file mode 100644
+index 0000000..39d1748
+--- /dev/null
++++ b/chromium-tabs.mk
+@@ -0,0 +1,164 @@
++NAME=ChromiumTabs
++CFG=Release
++BLD=build
++FRM_APP=framework
++
++FRM_BLD=$(BLD)/$(FRM_APP)/$(CFG)
++FRM=$(FRM_BLD)/$(NAME).$(FRM_APP)
++
++TARG=$(FRM)/Versions/A/$(NAME)
++
++# compiler and compiler options
++COMPILER=gcc
++ARCH=-arch i386 $(CFLAGS)
++CC=$(COMPILER) -x c++ $(ARCH)
++CO=$(COMPILER) -x objective-c++ $(ARCH)
++CCX=$(CC) $(gDEFs) $(INCS)
++CCO=$(CO) $(gDEFs) $(INCS)
++
++INST_NAME=-install_name \
++	@executable_path/../Frameworks/$(NAME)/Versions/A/$(NAME)
++
++LD=$(COMPILER) $(ARCH) -dynamiclib -framework Cocoa $(INST_NAME)
++
++IBTOOL=ibtool
++
++gDEFs=-DNDEBUG=1
++
++SRC_DIRS=./src ./src/base \
++  ./src/chrome/browser/cocoa ./src/chrome/browser/tabs \
++  ./src/chrome/common \
++  ./src/third_party/gtm-subset \
++  ./src/third_party/molokocacao \
++  ./src/third_party/mozilla \
++  ./resources
++  
++INC_DIRS=$(SRC_DIRS)
++
++INCS=$(addprefix -I,$(INC_DIRS))
++
++SRC_OBJ = \
++  common-B8AC9510F0A42B17.o \
++  common-A9AF536553944B19.o \
++  hover_close_button.o \
++  hover_button.o \
++  CTPageTransition.o \
++  background_gradient_view.o \
++  CTTabController.o \
++  CTTabView.o \
++  CTTabWindowController.o \
++  CTTabStripView.o \
++  url_drop_target.o \
++  throbber_view.o \
++  CTTabContents.o \
++  CTTabStripModel.o \
++  CTTabStripModelOrderController.o \
++  CTTabContentsController.o \
++  CTTabStripController.o \
++  new_tab_button.o \
++  CTTabStripModelObserverBridge.o \
++  CTBrowserWindowController.o \
++  fast_resize_view.o \
++  CTBrowser.o \
++  GTMNSAnimation+Duration.o \
++  GTMNSColor+Luminance.o \
++  GTMWindowSheetController.o \
++  NSBezierPath+MCAdditions.o \
++  NSPasteboard+Utils.o \
++  NSScreen+Utils.o \
++  NSString+Utils.o \
++  NSURL+Utils.o \
++  NSWorkspace+Utils.o \
++  GTMNSBezierPath+CGPath.o \
++  GTMFadeTruncatingTextFieldCell.o \
++  CTUtil.o \
++  NSImage+CTAdditions.o \
++  CTToolbarView.o \
++  NSWindow+CTThemed.o \
++  CTToolbarController.o \
++  CTBrowserWindow.o \
++  CTBrowserFrameView.o \
++  scoped_nsautorelease_pool.o \
++
++NIB= \
++  BrowserWindow.nib \
++  TabContents.nib \
++  TabView.nib \
++  Toolbar.nib
++
++OBJ=$(SRC_OBJ)
++OBJS=$(addprefix $(FRM_BLD)/,$(OBJ))
++NIBS=$(addprefix $(FRM_BLD)/,$(NIB))
++
++vpath %.m $(SRC_DIRS)
++vpath %.mm $(SRC_DIRS)
++vpath %.cpp $(SRC_DIRS)
++vpath %.cxx $(SRC_DIRS)
++vpath %.c $(SRC_DIRS)
++vpath %.h $(INC_DIRS)
++vpath %.xib $(SRC_DIRS)
++
++all: $(TARG)
++
++$(TARG): $(FRM) $(OBJS) $(NIBS)
++	$(LD) $(OBJS) -o $(TARG) -lstdc++
++	-cp $(FRM_BLD)/*.nib $(FRM)/Resources
++	-cd $(FRM) && ln Versions/A/$(NAME) $(NAME)
++	touch $(TARG)
++
++$(FRM): $(FRM_BLD)
++	-rm -rf $(FRM)
++	-mkdir $(FRM)
++	-mkdir $(FRM)/Versions
++	-mkdir $(FRM)/Versions/A
++	-mkdir $(FRM)/Versions/A/Headers
++	-mkdir $(FRM)/Versions/A/Resources
++		
++	-cd $(FRM)/Versions && rm -rf Current && ln -sf A/ Current
++	-cd $(FRM) && rm -rf Headers && ln -sf Versions/A/Headers/ Headers
++	-cd $(FRM) && rm -rf Resources && ln -sf Versions/A/Resources/ Resources
++	
++	-find ./src -name "*.h*" -print | xargs -I {} cp {} build/framework/Release/ChromiumTabs.framework/Headers/
++	-cp -R resources/English.lproj $(FRM)/Resources
++	-cp resources/gfx/*.png $(FRM)/Resources
++	-cp resources/gfx/*.pdf $(FRM)/Resources
++	
++	cp resources/ChromiumTabs-Info.plist $(FRM)/Resources/Info.plist
++	sed -i 's/$${EXECUTABLE_NAME}/$(NAME)/g' $(FRM)/Resources/Info.plist
++	sed -i 's/$${PRODUCT_NAME:rfc1034identifier}/$(NAME)/g' $(FRM)/Resources/Info.plist
++	
++$(FRM_BLD):
++	-mkdir $(BLD)
++	-mkdir $(BLD)/$(FRM_APP)
++	-mkdir $(FRM_BLD)
++	
++clean:
++	-rm -rf $(BLD)/$(FRM_APP)
++
++# build objective-c++ files
++$(FRM_BLD)/%.o : %.mm
++	$(CCO) $(gDEFs) -c $< -o $@ -include prefix.pch
++
++# build objective-c files
++$(FRM_BLD)/%.o : %.m
++	$(CCO) -c $< -o $@ -include prefix.pch
++
++# build c++ files
++$(FRM_BLD)/%.o : %.cxx
++	$(CCX) -c $< -o $@ -include prefix.pch
++
++# build c files
++$(FRM_BLD)/%.o : %.c
++	$(CCX) -c $< -o $@ -include prefix.pch
++	
++# build nib files
++$(FRM_BLD)/%.nib : %.xib
++	$(IBTOOL) --errors --warnings --notices --output-format human-readable-text \
++	  --compile $@ $<
++
++	
++$(FRM_BLD)/common-B8AC9510F0A42B17.o : common.c
++	$(CCX) -c $< -o $@ -include prefix.pch
++
++$(FRM_BLD)/common-A9AF536553944B19.o : common.mm
++	$(CCO) -c $< -o $@ -include prefix.pch
+\ No newline at end of file
+-- 
+1.6.5.6
+
+
+From e730a8ba5acc15b6a6973697315380fe70614893 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Wed, 26 Jan 2011 21:42:37 -0500
+Subject: [PATCH 2/8] I forgot to add stuff. cause Im new to git
+
+---
+ chromium-tabs.mk                                   |    2 +-
+ src/CTTabContents.mm                               |    6 +++---
+ .../gtm-subset/GTMFadeTruncatingTextFieldCell.m    |    2 +-
+ .../gtm-subset/GTMWindowSheetController.m          |    6 +++---
+ .../molokocacao/NSBezierPath+MCAdditions.m         |    4 ++--
+ 5 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/chromium-tabs.mk b/chromium-tabs.mk
+index 39d1748..7c12f82 100644
+--- a/chromium-tabs.mk
++++ b/chromium-tabs.mk
+@@ -9,7 +9,7 @@ FRM=$(FRM_BLD)/$(NAME).$(FRM_APP)
+ TARG=$(FRM)/Versions/A/$(NAME)
+ 
+ # compiler and compiler options
+-COMPILER=gcc
++COMPILER=clang
+ ARCH=-arch i386 $(CFLAGS)
+ CC=$(COMPILER) -x c++ $(ARCH)
+ CO=$(COMPILER) -x objective-c++ $(ARCH)
+diff --git a/src/CTTabContents.mm b/src/CTTabContents.mm
+index cc17ef6..e3df92c 100644
+--- a/src/CTTabContents.mm
++++ b/src/CTTabContents.mm
+@@ -89,7 +89,7 @@ _synthRetain(NSImage*, Icon, icon);
+   NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
+   if (parentOpener_) {
+     [nc removeObserver:self
+-                  name:CTTabContentsDidCloseNotification
++                  name:(NSString*)CTTabContentsDidCloseNotification
+                 object:parentOpener_];
+   }
+   kvo_change(parentOpener)
+@@ -97,7 +97,7 @@ _synthRetain(NSImage*, Icon, icon);
+   if (parentOpener_) {
+     [nc addObserver:self
+            selector:@selector(tabContentsDidClose:)
+-               name:CTTabContentsDidCloseNotification
++               name:(NSString*)CTTabContentsDidCloseNotification
+              object:parentOpener_];
+   }
+ }
+@@ -184,7 +184,7 @@ _synthRetain(NSImage*, Icon, icon);
+ 
+ -(void)closingOfTabDidStart:(CTTabStripModel*)closeInitiatedByTabStripModel {
+   NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
+-  [nc postNotificationName:CTTabContentsDidCloseNotification object:self];
++  [nc postNotificationName:(NSString*)CTTabContentsDidCloseNotification object:self];
+ }
+ 
+ // Called when this tab was inserted into a browser
+diff --git a/src/third_party/gtm-subset/GTMFadeTruncatingTextFieldCell.m b/src/third_party/gtm-subset/GTMFadeTruncatingTextFieldCell.m
+index 0e7344c..dba3967 100644
+--- a/src/third_party/gtm-subset/GTMFadeTruncatingTextFieldCell.m
++++ b/src/third_party/gtm-subset/GTMFadeTruncatingTextFieldCell.m
+@@ -60,7 +60,7 @@
+   // suboptimal, but since it fades out, that's ok.
+   [[NSGraphicsContext currentContext] saveGraphicsState];
+   [NSBezierPath clipRect:gradientPart];
+-  CGContextRef context = [[NSGraphicsContext currentContext] graphicsPort];
++  CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
+   CGContextBeginTransparencyLayerWithRect(context,
+                                           NSRectToCGRect(gradientPart), 0);
+ 
+diff --git a/src/third_party/gtm-subset/GTMWindowSheetController.m b/src/third_party/gtm-subset/GTMWindowSheetController.m
+index 6d99cf7..056e405 100644
+--- a/src/third_party/gtm-subset/GTMWindowSheetController.m
++++ b/src/third_party/gtm-subset/GTMWindowSheetController.m
+@@ -271,7 +271,7 @@ willPositionSheet:(NSWindow*)sheet
+ 
+   sheetInfo->modalDelegate_ = [params objectAtIndex:info->modalDelegateIndex_];
+   sheetInfo->didEndSelector_ =
+-      [[params objectAtIndex:info->didEndSelectorIndex_] pointerValue];
++      (SEL)[[params objectAtIndex:info->didEndSelectorIndex_] pointerValue];
+   sheetInfo->contextInfo_ =
+       [[params objectAtIndex:info->contextInfoIndex_] pointerValue];
+ 
+@@ -305,7 +305,7 @@ willPositionSheet:(NSWindow*)sheet
+   for (NSUInteger i = 0; i < [params count]; ++i) {
+     // Remember that args 0 and 1 are the target and selector, thus the |i+2|s
+     if (i == info->modalForWindowIndex_) {
+-      [invocation setArgument:&sheetInfo->overlayWindow_ atIndex:i+2];
++      [invocation setArgument:(void*)&sheetInfo->overlayWindow_ atIndex:i+2];
+     } else if (i == info->modalDelegateIndex_) {
+       [invocation setArgument:&self atIndex:i+2];
+     } else if (i == info->didEndSelectorIndex_) {
+@@ -528,7 +528,7 @@ willPositionSheet:(NSWindow*)sheet
+   [[NSNotificationCenter defaultCenter]
+       removeObserver:self
+                 name:NSViewFrameDidChangeNotification
+-              object:contextInfo];
++              object:(id)contextInfo];
+ 
+   NSInvocation* invocation =
+       [NSInvocation invocationWithMethodSignature:
+diff --git a/src/third_party/molokocacao/NSBezierPath+MCAdditions.m b/src/third_party/molokocacao/NSBezierPath+MCAdditions.m
+index 14e4619..371aec0 100644
+--- a/src/third_party/molokocacao/NSBezierPath+MCAdditions.m
++++ b/src/third_party/molokocacao/NSBezierPath+MCAdditions.m
+@@ -17,7 +17,7 @@ extern CGPathRef CGContextCopyPath(CGContextRef context);
+ 
+ static void CGPathCallback(void *info, const CGPathElement *element)
+ {
+-  NSBezierPath *path = info;
++  NSBezierPath *path = (NSBezierPath*)info;
+   CGPoint *points = element->points;
+   
+   switch (element->type) {
+@@ -66,7 +66,7 @@ static void CGPathCallback(void *info, const CGPathElement *element)
+ {
+ #ifdef MCBEZIER_USE_PRIVATE_FUNCTION
+   NSBezierPath *path = [self copy];
+-  CGContextRef context = [[NSGraphicsContext currentContext] graphicsPort];
++  CGContextRef context = (CGContextRef)[[NSGraphicsContext currentContext] graphicsPort];
+   CGPathRef pathRef = [path gtm_CGPath];
+   [path release];
+   
+-- 
+1.6.5.6
+
+
+From 1d497d7177ad6306918d3544932200493d981202 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Wed, 26 Jan 2011 22:59:22 -0500
+Subject: [PATCH 3/8] added the application
+
+---
+ chromium-tabs.mk |  120 +++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 100 insertions(+), 20 deletions(-)
+
+diff --git a/chromium-tabs.mk b/chromium-tabs.mk
+index 7c12f82..b62394a 100644
+--- a/chromium-tabs.mk
++++ b/chromium-tabs.mk
+@@ -1,12 +1,17 @@
+ NAME=ChromiumTabs
+ CFG=Release
+ BLD=build
+-FRM_APP=framework
++FRM_TYPE=framework
++APP_TYPE=app
+ 
+-FRM_BLD=$(BLD)/$(FRM_APP)/$(CFG)
+-FRM=$(FRM_BLD)/$(NAME).$(FRM_APP)
++APP_BLD=$(BLD)/$(APP_TYPE)/$(CFG)
++APP=$(APP_BLD)/$(NAME).$(APP_TYPE)
+ 
+-TARG=$(FRM)/Versions/A/$(NAME)
++FRM_BLD=$(BLD)/$(FRM_TYPE)/$(CFG)
++FRM=$(FRM_BLD)/$(NAME).$(FRM_TYPE)
++
++APP_TARG=$(APP)/Contents/MacOS/$(NAME)
++FRM_TARG=$(FRM)/Versions/A/$(NAME)
+ 
+ # compiler and compiler options
+ COMPILER=clang
+@@ -17,9 +22,10 @@ CCX=$(CC) $(gDEFs) $(INCS)
+ CCO=$(CO) $(gDEFs) $(INCS)
+ 
+ INST_NAME=-install_name \
+-	@executable_path/../Frameworks/$(NAME)/Versions/A/$(NAME)
++	@executable_path/../Frameworks/$(NAME).$(FRM_TYPE)/Versions/A/$(NAME)
+ 
+-LD=$(COMPILER) $(ARCH) -dynamiclib -framework Cocoa $(INST_NAME)
++LD_L=$(COMPILER) $(ARCH) -framework Cocoa
++LD=$(LD_L) -dynamiclib $(INST_NAME)
+ 
+ IBTOOL=ibtool
+ 
+@@ -31,13 +37,26 @@ SRC_DIRS=./src ./src/base \
+   ./src/third_party/gtm-subset \
+   ./src/third_party/molokocacao \
+   ./src/third_party/mozilla \
+-  ./resources
++  ./resources \
++  ./examples/simple-app \
++  ./examples/simple-app/English.lproj
+   
+ INC_DIRS=$(SRC_DIRS)
+ 
+ INCS=$(addprefix -I,$(INC_DIRS))
+ 
+-SRC_OBJ = \
++APP_OBJ = \
++  main.o \
++  AppDelegate.o \
++  MyBrowser.o \
++  MyTabContents.o \
++  
++APP_NIB = MainMenu.nib
++
++APP_OBJS=$(addprefix $(APP_BLD)/,$(APP_OBJ))
++APP_NIBS=$(addprefix $(APP_BLD)/,$(APP_NIB))
++
++FRM_OBJ = \
+   common-B8AC9510F0A42B17.o \
+   common-A9AF536553944B19.o \
+   hover_close_button.o \
+@@ -80,15 +99,14 @@ SRC_OBJ = \
+   CTBrowserFrameView.o \
+   scoped_nsautorelease_pool.o \
+ 
+-NIB= \
++FRM_NIB= \
+   BrowserWindow.nib \
+   TabContents.nib \
+   TabView.nib \
+   Toolbar.nib
+ 
+-OBJ=$(SRC_OBJ)
+-OBJS=$(addprefix $(FRM_BLD)/,$(OBJ))
+-NIBS=$(addprefix $(FRM_BLD)/,$(NIB))
++FRM_OBJS=$(addprefix $(FRM_BLD)/,$(FRM_OBJ))
++FRM_NIBS=$(addprefix $(FRM_BLD)/,$(FRM_NIB))
+ 
+ vpath %.m $(SRC_DIRS)
+ vpath %.mm $(SRC_DIRS)
+@@ -98,13 +116,46 @@ vpath %.c $(SRC_DIRS)
+ vpath %.h $(INC_DIRS)
+ vpath %.xib $(SRC_DIRS)
+ 
+-all: $(TARG)
++all: framework application
++
++application: framework header_deps
++	-$(MAKE) -f chromium-tabs.mk $(APP_TARG)
++	$(MAKE) -f chromium-tabs.mk clean_header_deps
++
++framework: $(FRM_TARG)
++
++header_deps:
++	-mkdir examples/simple-app/ChromiumTabs
++	-find ./src -name "*.h*" -print | xargs -I {} cp {} examples/simple-app/ChromiumTabs
+ 
+-$(TARG): $(FRM) $(OBJS) $(NIBS)
+-	$(LD) $(OBJS) -o $(TARG) -lstdc++
++clean_header_deps:
++	-rm -rf examples/simple-app/ChromiumTabs
++	
++$(APP_TARG): $(APP) $(APP_OBJS) $(APP_NIBS)
++	-cp -R $(FRM) $(APP)/Contents/Frameworks
++	$(LD_L) $(APP_OBJS) $(APP)/Contents/Frameworks/$(NAME).$(FRM_TYPE)/$(NAME) -o $(APP_TARG) -lstdc++
++	-cp $(APP_BLD)/*.nib $(APP)/Contents/Resources
++		
++$(FRM_TARG): $(FRM) $(FRM_OBJS) $(FRM_NIBS)
++	$(LD) $(FRM_OBJS) -o $(FRM_TARG) -lstdc++
+ 	-cp $(FRM_BLD)/*.nib $(FRM)/Resources
+ 	-cd $(FRM) && ln Versions/A/$(NAME) $(NAME)
+-	touch $(TARG)
++	touch $(FRM_TARG)
++
++$(APP): $(APP_BLD)
++	-rm -rf $(APP)
++	-mkdir $(APP)
++	-mkdir $(APP)/Contents
++	-mkdir $(APP)/Contents/Frameworks
++	-mkdir $(APP)/Contents/MacOS
++	-mkdir $(APP)/Contents/Resources
++	
++	-cp -R examples/simple-app/English.lproj $(APP)/Contents/Resources
++	-cp examples/simple-app/Info.plist $(APP)/Contents
++	-sed -i 's/$${EXECUTABLE_NAME}/$(NAME)/g' $(APP)/Contents/Info.plist
++	-sed -i 's/$${PRODUCT_NAME}/$(NAME)/g' $(APP)/Contents/Info.plist
++	-sed -i 's/$${PRODUCT_NAME:rfc1034identifier}/$(NAME)/g' $(APP)/Contents/Info.plist
++	-sed -i 's/$${MACOSX_DEPLOYMENT_TARGET}/10.5/g' $(APP)/Contents/Info.plist
+ 
+ $(FRM): $(FRM_BLD)
+ 	-rm -rf $(FRM)
+@@ -129,15 +180,22 @@ $(FRM): $(FRM_BLD)
+ 	
+ $(FRM_BLD):
+ 	-mkdir $(BLD)
+-	-mkdir $(BLD)/$(FRM_APP)
++	-mkdir $(BLD)/$(FRM_TYPE)
+ 	-mkdir $(FRM_BLD)
+-	
++
++$(APP_BLD):
++	-mkdir $(BLD)
++	-mkdir $(BLD)/$(APP_TYPE)
++	-mkdir $(APP_BLD)
++
+ clean:
+-	-rm -rf $(BLD)/$(FRM_APP)
++	-rm -rf $(BLD)/$(FRM_TYPE)
++	-rm -rf $(BLD)/$(APP_TYPE)
+ 
++# FRAMEWORK BUILDS
+ # build objective-c++ files
+ $(FRM_BLD)/%.o : %.mm
+-	$(CCO) $(gDEFs) -c $< -o $@ -include prefix.pch
++	$(CCO) -c $< -o $@ -include prefix.pch
+ 
+ # build objective-c files
+ $(FRM_BLD)/%.o : %.m
+@@ -155,6 +213,28 @@ $(FRM_BLD)/%.o : %.c
+ $(FRM_BLD)/%.nib : %.xib
+ 	$(IBTOOL) --errors --warnings --notices --output-format human-readable-text \
+ 	  --compile $@ $<
++	  
++# APPLICATION BUILDS
++# build objective-c++ files
++$(APP_BLD)/%.o : %.mm
++	$(CCO) $(gDEFs) -c $< -o $@
++
++# build objective-c files
++$(APP_BLD)/%.o : %.m
++	$(CCO) -c $< -o $@
++		
++# build c++ files
++$(APP_BLD)/%.o : %.cxx
++	$(CCX) -c $< -o $@
++
++# build c files
++$(APP_BLD)/%.o : %.c
++	$(CCX) -c $< -o $@
++	
++# build nib files
++$(APP_BLD)/%.nib : %.xib
++	$(IBTOOL) --errors --warnings --notices --output-format human-readable-text \
++	  --compile $@ $<
+ 
+ 	
+ $(FRM_BLD)/common-B8AC9510F0A42B17.o : common.c
+-- 
+1.6.5.6
+
+
+From 428a237fbdde902abae718c452972eaaadca1c28 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Thu, 27 Jan 2011 19:33:16 -0500
+Subject: [PATCH 4/8] application
+
+---
+ chromium-tabs.mk |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/chromium-tabs.mk b/chromium-tabs.mk
+index b62394a..8e8510f 100644
+--- a/chromium-tabs.mk
++++ b/chromium-tabs.mk
+@@ -13,6 +13,8 @@ FRM=$(FRM_BLD)/$(NAME).$(FRM_TYPE)
+ APP_TARG=$(APP)/Contents/MacOS/$(NAME)
+ FRM_TARG=$(FRM)/Versions/A/$(NAME)
+ 
++SED=sed
++
+ # compiler and compiler options
+ COMPILER=clang
+ ARCH=-arch i386 $(CFLAGS)
+@@ -152,10 +154,10 @@ $(APP): $(APP_BLD)
+ 	
+ 	-cp -R examples/simple-app/English.lproj $(APP)/Contents/Resources
+ 	-cp examples/simple-app/Info.plist $(APP)/Contents
+-	-sed -i 's/$${EXECUTABLE_NAME}/$(NAME)/g' $(APP)/Contents/Info.plist
+-	-sed -i 's/$${PRODUCT_NAME}/$(NAME)/g' $(APP)/Contents/Info.plist
+-	-sed -i 's/$${PRODUCT_NAME:rfc1034identifier}/$(NAME)/g' $(APP)/Contents/Info.plist
+-	-sed -i 's/$${MACOSX_DEPLOYMENT_TARGET}/10.5/g' $(APP)/Contents/Info.plist
++	-$(SED) -i 's/$${EXECUTABLE_NAME}/$(NAME)/g' $(APP)/Contents/Info.plist
++	-$(SED) -i 's/$${PRODUCT_NAME}/$(NAME)/g' $(APP)/Contents/Info.plist
++	-$(SED) -i 's/$${PRODUCT_NAME:rfc1034identifier}/$(NAME)/g' $(APP)/Contents/Info.plist
++	-$(SED) -i 's/$${MACOSX_DEPLOYMENT_TARGET}/10.5/g' $(APP)/Contents/Info.plist
+ 
+ $(FRM): $(FRM_BLD)
+ 	-rm -rf $(FRM)
+@@ -175,8 +177,8 @@ $(FRM): $(FRM_BLD)
+ 	-cp resources/gfx/*.pdf $(FRM)/Resources
+ 	
+ 	cp resources/ChromiumTabs-Info.plist $(FRM)/Resources/Info.plist
+-	sed -i 's/$${EXECUTABLE_NAME}/$(NAME)/g' $(FRM)/Resources/Info.plist
+-	sed -i 's/$${PRODUCT_NAME:rfc1034identifier}/$(NAME)/g' $(FRM)/Resources/Info.plist
++	$(SED) -i 's/$${EXECUTABLE_NAME}/$(NAME)/g' $(FRM)/Resources/Info.plist
++	$(SED) -i 's/$${PRODUCT_NAME:rfc1034identifier}/$(NAME)/g' $(FRM)/Resources/Info.plist
+ 	
+ $(FRM_BLD):
+ 	-mkdir $(BLD)
+-- 
+1.6.5.6
+
+
+From 6e5c8d8b2bb04df4fc54b2d86b96e7537dbc5f62 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Fri, 28 Jan 2011 23:24:43 -0500
+Subject: [PATCH 5/8] added ability to debug vs nodebug
+
+---
+ chromium-tabs.mk |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/chromium-tabs.mk b/chromium-tabs.mk
+index 8e8510f..24a4c4b 100644
+--- a/chromium-tabs.mk
++++ b/chromium-tabs.mk
+@@ -31,7 +31,11 @@ LD=$(LD_L) -dynamiclib $(INST_NAME)
+ 
+ IBTOOL=ibtool
+ 
+-gDEFs=-DNDEBUG=1
++ifdef DBG
++gDEFs=-O0 -g
++else
++gDEFs=-DNDEBUG=1 -O3
++endif
+ 
+ SRC_DIRS=./src ./src/base \
+   ./src/chrome/browser/cocoa ./src/chrome/browser/tabs \
+-- 
+1.6.5.6
+
+
+From df68a20642d387c36e5893649d40e3998b88b81e Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Fri, 4 Feb 2011 22:44:01 -0500
+Subject: [PATCH 6/8] this is a bug which makes the [CTBrowserWindowController mainBrowserWindowController] functionality punk out on us:(
+
+---
+ src/CTBrowserWindowController.mm |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/src/CTBrowserWindowController.mm b/src/CTBrowserWindowController.mm
+index 48d6e87..70e8189 100644
+--- a/src/CTBrowserWindowController.mm
++++ b/src/CTBrowserWindowController.mm
+@@ -822,6 +822,9 @@ static CTBrowserWindowController* _currentMain = nil; // weak
+       contents.isVisible = YES;
+     }
+   }
++  if (_currentMain != self) {
++    ct_casid(&_currentMain, self);
++  }
+ }
+ 
+ // Called when we are deactivated (when we lose focus).
+-- 
+1.6.5.6
+
+
+From 796836de04e51a85be1718f6d7b6c4f3da95b710 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Tue, 8 Feb 2011 00:01:32 -0500
+Subject: [PATCH 7/8] force the registration of window becomemain/resignmain notifications because when we tear off a tab into a new browser window, these notifications are not going to the new windows browserWindowController for some reason.
+
+---
+ src/CTBrowserWindow.mm |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/src/CTBrowserWindow.mm b/src/CTBrowserWindow.mm
+index 4cf6272..f510c57 100644
+--- a/src/CTBrowserWindow.mm
++++ b/src/CTBrowserWindow.mm
+@@ -85,7 +85,18 @@ namespace {
+   CTBrowserWindowController* browserController
+       = static_cast<CTBrowserWindowController*>(controller);
+   if ([browserController isKindOfClass:[CTBrowserWindowController class]]) {
+-    //NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
++#if 1
++    NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
++    [defaultCenter addObserver:[self windowController]
++                   selector:@selector(windowDidBecomeMain:)
++                   name:NSWindowDidBecomeMainNotification
++                   object:nil];
++     
++    [defaultCenter addObserver:[self windowController]
++                   selector:@selector(windowDidResignMain:)
++                   name:NSWindowDidResignMainNotification
++                   object:nil];
++#endif
+     //[defaultCenter addObserver:self
+     //                  selector:@selector(themeDidChangeNotification:)
+     //                      name:kBrowserThemeDidChangeNotification
+-- 
+1.6.5.6
+
+
+From b986913556cc5672e8365f278889f3d8f9d2cdc9 Mon Sep 17 00:00:00 2001
+From: Michael Mullin <masmullin@saturn.local>
+Date: Tue, 8 Feb 2011 00:41:05 -0500
+Subject: [PATCH 8/8] ok so notifications didn't work, lets just kludge it
+
+---
+ chromium-tabs.mk       |    8 ++++++--
+ src/CTBrowserWindow.mm |   19 +++++--------------
+ 2 files changed, 11 insertions(+), 16 deletions(-)
+
+diff --git a/chromium-tabs.mk b/chromium-tabs.mk
+index 24a4c4b..02e6d27 100644
+--- a/chromium-tabs.mk
++++ b/chromium-tabs.mk
+@@ -15,8 +15,12 @@ FRM_TARG=$(FRM)/Versions/A/$(NAME)
+ 
+ SED=sed
+ 
+-# compiler and compiler options
+-COMPILER=clang
++# compiler and compiler options
++ifdef CLANG
++COMPILER=clang
++else
++COMPILER=gcc
++endif
+ ARCH=-arch i386 $(CFLAGS)
+ CC=$(COMPILER) -x c++ $(ARCH)
+ CO=$(COMPILER) -x objective-c++ $(ARCH)
+diff --git a/src/CTBrowserWindow.mm b/src/CTBrowserWindow.mm
+index f510c57..3302214 100644
+--- a/src/CTBrowserWindow.mm
++++ b/src/CTBrowserWindow.mm
+@@ -85,18 +85,7 @@ namespace {
+   CTBrowserWindowController* browserController
+       = static_cast<CTBrowserWindowController*>(controller);
+   if ([browserController isKindOfClass:[CTBrowserWindowController class]]) {
+-#if 1
+-    NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
+-    [defaultCenter addObserver:[self windowController]
+-                   selector:@selector(windowDidBecomeMain:)
+-                   name:NSWindowDidBecomeMainNotification
+-                   object:nil];
+-     
+-    [defaultCenter addObserver:[self windowController]
+-                   selector:@selector(windowDidResignMain:)
+-                   name:NSWindowDidResignMainNotification
+-                   object:nil];
+-#endif
++    //NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
+     //[defaultCenter addObserver:self
+     //                  selector:@selector(themeDidChangeNotification:)
+     //                      name:kBrowserThemeDidChangeNotification
+@@ -271,12 +260,14 @@ namespace {
+ 
+ - (void)becomeMainWindow {
+   [self windowMainStatusChanged];
+-  [super becomeMainWindow];
++  [super becomeMainWindow];
++  [[self windowController] windowDidBecomeMain:nil];
+ }
+ 
+ - (void)resignMainWindow {
+   [self windowMainStatusChanged];
+-  [super resignMainWindow];
++  [super resignMainWindow];
++  [[self windowController] windowDidResignMain:nil];
+ }
+ 
+ // Called after the current theme has changed.
+-- 
+1.6.5.6
+
