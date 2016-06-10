@@ -1,6 +1,6 @@
 **** CodeAssistor ****
 
-Version 0.0.7
+Version 0.0.8
 
 *** Introduction ***
 
@@ -17,8 +17,9 @@ You must have GTK+2.x-Developer, libunique, GCC, and ImageMagick installed on yo
 
 Scintilla (copyright Neil Hodgson: http://www.scintilla.org) is the editor component used by CodeAssistor.
 
-As of this writing, CodeAssitor utilizes patches provided by Michael Mullin and not yet integrated into the main scintilla source tree. You can get the source code for scintilla + Michael's patches @ ( https://code.launchpad.net/~masmullin/scintilla-cocoa/mpatch )
-NOTE: bzr is required to download the sourcecode (http://bazaar.canonical.com/en/)
+As of this writing, CodeAssitor utilizes patches provided by Michael Mullin and not yet integrated into the main scintilla source tree. You can get the source code for scintilla + Michael's patches @
+git clone https://github.com/masmullin2000/scintilla-masmullin scintilla
+
 
 You can get the main branch of the scintilla source code @ ( http://sourceforge.net/projects/scintilla/develop )
 
@@ -26,19 +27,18 @@ You can get the main branch of the scintilla source code @ ( http://sourceforge.
 All done in a Terminal Window.
 ** source code retrieval **
 
-bzr branch lp:~masmullin/scintilla-cocoa/mpatch scintilla
+git clone https://github.com/masmullin2000/scintilla-masmullin scintilla
 
-bzr branch lp:codeassistor CodeAssistor
-
+git clone https://github.com/masmullin2000/codeassistor.git
 ** compile **
 
+*** NOTE: I DO NOT SUPPORT MAC OR WINDOWS (I assume the windows version
+still works, I assume the MAC version does not)
 LIN: cd CodeAssistor && make -f lin.mk all
 MAC: cd CodeAssistor && make -f mac.mk all
 WIN: cd CodeAssistor && make -f win.mk all
 OR for a static build (no dlls) on windows
 WIN: cd CodeAssistor && make -f win.mk all STATIC=yes
-
-Note clang+llvm is supported on Mac and Windows, but is not recommended
 
 ** Installation **
 
